@@ -1,0 +1,35 @@
+#!/bin/bash
+
+stop_music() {
+	mpc pause
+}
+
+lock() {
+	i3blur
+}
+
+case "$1" in
+    lock)
+	    stop_music && lock
+        ;;
+    logout)
+	    stop_music && i3-msg exit
+        ;;
+    suspend)
+	    stop_music && lock && systemctl suspend
+        ;;
+    hibernate)
+	    stop_music && lock && systemctl hibernate
+        ;;
+    reboot)
+	    stop_music && systemctl reboot
+        ;;
+    shutdown)
+	    stop_music && systemctl poweroff
+        ;;
+    *)
+	    echo "Usage: $0 {lock|logout|suspend|hibernate|reboot|shutdown}"
+	    exit 2
+esac
+
+exit 0

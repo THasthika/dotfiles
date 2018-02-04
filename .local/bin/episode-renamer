@@ -1,0 +1,114 @@
+#!/bin/bash
+
+if [[ $# -eq 0 ]]
+then
+    echo "list the files which needs to be renamed"
+    exit 1
+fi
+
+get_season_number () (
+
+    # Season.*# | Season.*##
+    sno=$(echo "$1" | grep -m 1 -P -o 'Season[ ]*?\d{1,2}' | grep -m 1 -P -o '\d{1,2}')
+    if [[ $? -eq 0 ]]
+    then
+	if [[ ${#sno} -eq 1 ]]
+	then
+	    sno=0$sno
+	fi
+	echo $sno
+	exit 0
+    fi
+
+    # S##
+    sno=$(echo "$1" | grep -m 1 -P -o 'S\d{2}' | grep -m 1 -P -o '\d{2}')
+    if [[ $? -eq 0 ]]
+    then
+	echo $sno
+	exit 0
+    fi
+
+    echo "Season number could not be found!"
+    exit 1
+)
+
+get_episode_number () (
+
+    # Episode.*# | Episode.*##
+    eno=$(echo "$1" | grep -m 1 -P -o 'Episode[ ]*\d{1,2}' | grep -m 1 -P -o '\d{1,2}')
+    if [[ $? -eq 0 ]]
+    then
+	if [[ ${#eno} -eq 1 ]]
+	then
+	    eno=0$eno
+	fi
+	echo $eno
+	exit 0
+    fi
+
+    # E##
+    eno=$(echo "$1" | grep -m 1 -P -o 'E\d{2}' | grep -m 1 -P -o '\d{2}')
+    if [[ $? -eq 0 ]]
+    then
+	echo $eno
+	exit 0
+    fi
+
+    echo "Episode number could not be found!"
+    exit 1
+)
+
+get_extension () {
+
+    ext=$(echo "$1" | grep -P -o '\..{3,4}$')
+    if [[ $? -eq 0 ]]
+    then
+	echo $ext
+	exit 0
+    fi
+
+    echo "Extension not found!"
+    exit 1
+
+}
+
+for f in "$@"
+do
+
+    if [[ ! -f $f ]]
+    then
+        echo $f not found!
+        echo Skipping $f
+        continue
+    fi
+
+    sno=$(get_season_number "$f")
+    if [[ $? -ne 0 ]]
+    then
+        echo Error: $sno
+        echo Skipping "$f"
+        continue
+    fi
+
+    eno=$(get_episode_number "$f")
+    if [[ $? -ne 0 ]]
+    then
+        echo Error: $eno
+        echo Skipping "$f"
+        continue
+    fi
+
+    ext=$(get_extension "$f")
+    if [[ $? -ne 0 ]]
+    then
+	echo Error: $eno
+	echo Skipping "$f"
+	continue
+    fi
+    
+    sno=S$sno
+    eno=E$eno
+    name=$sno$eno$ext
+
+    mv -v "$f" "$name"
+done
