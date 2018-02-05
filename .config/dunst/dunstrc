@@ -9,7 +9,7 @@
     show_age_threshold = 60
     word_wrap = yes
     ignore_newline = no
-    geometry = "200x5-6+30"
+    geometry = "300x30-6+30"
     transparency = 0
     idle_threshold = 120
     monitor = 0
@@ -19,8 +19,9 @@
     separator_height = 2
     padding = 8
     horizontal_padding = 8
-    separator_color = "#585858"
+    separator_color = "#444444"
     startup_notification = false
+    shrink = true
 
 [frame]
     width = 1
@@ -33,16 +34,16 @@
     context = ctrl+shift+period
 
 [urgency_low]
-    background = "#181818"
-    foreground = "#E3C7AF"
+    background = "#222222"
+    foreground = "#888A85"
     timeout = 5
 
 [urgency_normal]
-    background = "#181818"
-    foreground = "#E3C7AF"
+    background = "#222222"
+    foreground = "#888A85"
     timeout = 20
 
 [urgency_critical]
-    background = "#181818"
-    foreground = "#E3C7AF"
+    background = "#222222"
+    foreground = "#888A85"
     timeout = 0

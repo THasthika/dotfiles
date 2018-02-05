@@ -2,7 +2,7 @@
 # Variables
 # =============================================================================
 
-set $browser "firefox"
+set $browser "chromium"
 set $editor "emacs"
 set $terminal "urxvtc"
 set $filebrowser "thunar"
@@ -13,10 +13,12 @@ set $musicplayer "sonata"
 # Initial setup
 # =============================================================================
 
+#  
+
 # Set workspace icons
 set $WS1 	"1: "
 set $WS2	"2: "
-set $WS3	"3: "
+set $WS3	"3: "
 set $WS4	"4: "
 set $WS5	"5: "
 set $WS6	"6: "
