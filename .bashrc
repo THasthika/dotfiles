@@ -173,6 +173,6 @@ esac
 
 alias config='/usr/bin/git --git-dir=/home/tharindu/.cfg/ --work-tree=/home/tharindu'
 
-if [[ $TERM ==  "rxvt-unicode-256color" ]]; then
+if [[ $TERM ==  "xterm-256color" ]]; then
 	exec tmux
 fi
