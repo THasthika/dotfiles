@@ -60,8 +60,38 @@ if [ -n "$force_color_prompt" ]; then
     fi
 fi
 
+parse_git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ [\1]/'
+}
+
+function custom01 {
+    local COLOR_GREY="\[\e[30;1m\]"
+    local COLOR_RED="\[\e[31;1m\]"
+    local COLOR_BLUE="\[\e[34;1m\]"
+    local COLOR_GREEN="\[\e[32;1m\]"
+    local COLOR_RESET="\[\e[0m\]"
+
+    local COLOR_USER_AND_HOST="${COLOR_BLUE}"
+    local PROMPT_SYMBOL="$"
+
+    if [[ $EUID -eq 0 ]]; then
+        COLOR_USER_AND_HOST="${COLOR_RED}"
+	PROMPT_SYMBOL="#"
+    fi
+
+    PS1="${COLOR_RESET}${debian_chroot:+($debian_chroot)}${COLOR_GREY}("
+    PS1+="${COLOR_USER_AND_HOST}\u@\h"
+    PS1+="${COLOR_GREY})"
+    PS1+=" ${COLOR_GREEN}\w"
+    PS1+="${COLOR_BLUE}"
+    PS1+='$(parse_git_branch)'
+    PS1+=" ${COLOR_GREY}${PROMPT_SYMBOL} "
+    PS1+="${COLOR_RESET}"
+}
+
 if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    # PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    custom01
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
