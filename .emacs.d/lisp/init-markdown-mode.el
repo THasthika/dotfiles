@@ -8,6 +8,7 @@
 
 (use-package markdown-mode
   :ensure t
-  :mode ("\\.markdown\\'" "\\.mkd\\'" "\\.md\\'"))
+  :mode ("\\.markdown\\'" "\\.mkd\\'" "\\.md\\'")
+  :bind (("C-c b" . markdown-insert-bold)))
 
 (provide 'init-markdown-mode)

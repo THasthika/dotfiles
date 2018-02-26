@@ -1,5 +1,10 @@
+;;; init.el --- require
+;;; Commentary:
+
+(require 'cl)
+
 ;; set user name
-(setq user-full-name "Tharindu Hasthika Bathigama")
+(setq user-full-name "Tharindu Hasthika")
 
 ;; set a file to write automatics configs to
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
@@ -22,7 +27,7 @@
 ;; 	     (c-mode . "linux")
 ;;              (other . "gnu")))
 (setq c-default-style "linux"
-      c-basic-offset 4)
+      c-basic-offset 8)
 
 ;; initial window
 (setq initial-frame-alist
@@ -181,18 +186,29 @@
       t
       )))
 
+(defun thb/ignore-errors-wrapper (fn)
+  (lexical-let ((fn fn))
+    (lambda ()
+      (interactive)
+      (ignore-errors
+	(funcall fn))
+      )))
+
+;; global keys
+
 (global-set-key (kbd "C-x <left>") 'thb/next-user-buffer)
 (global-set-key (kbd "C-x <right>") 'thb/previous-user-buffer)
 (global-set-key (kbd "C-x C-<left>") 'thb/next-user-buffer)
 (global-set-key (kbd "C-x C-<right>") 'thb/previous-user-buffer)
 
+(global-set-key (kbd "C-c C-<up>") (thb/ignore-errors-wrapper 'windmove-up))
+(global-set-key (kbd "C-c C-<down>") (thb/ignore-errors-wrapper 'windmove-down))
+(global-set-key (kbd "C-c C-<left>") (thb/ignore-errors-wrapper 'windmove-left))
+(global-set-key (kbd "C-c C-<right>") (thb/ignore-errors-wrapper 'windmove-right))
+
 (global-unset-key (kbd "C-z")) ;; unset gui freezing
 
-(global-set-key (kbd "C-/") 'undo-tree-undo)
-(global-set-key (kbd "C-S-/") 'undo-tree-redo)
-
-(global-set-key (kbd "C-;") 'comment-line)
-
-(add-to-list 'auto-mode-alist '("\\.njk\\'" . web-mode))
+(global-set-key (kbd "C-;") 'comment-indent)
+(global-set-key (kbd "M-;") 'comment-or-uncomment-region)
 
 (provide 'init-user)

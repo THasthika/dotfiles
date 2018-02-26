@@ -37,8 +37,6 @@
               ("C-c"    . company-search-abort))
   :diminish (company-mode . "ς")
   :config
-  ;; (global-company-mode)
-  (add-hook 'after-init-hook 'global-company-mode)
   ;; C++ header completion
   (use-package company-c-headers
     :ensure t
@@ -72,5 +70,7 @@
     :bind (("C-c l" . company-auctex))
     :config
     (add-to-list 'company-backends 'company-auctex)))
+
+(add-hook 'after-init-hook 'global-company-mode)
 
 (provide 'init-company)
