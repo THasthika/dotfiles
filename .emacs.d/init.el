@@ -1,4 +1,7 @@
-;; check version
+;;; init.el --- Summary
+;;; Commentary:
+
+;;; Code:
 (let ((minver "24.3"))
   (when (version< emacs-version minver)
     (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
@@ -39,7 +42,6 @@
 (require 'init-flx-ido)
 (require 'init-smex)
 (require 'init-beacon)
-(require 'init-undo-tree)
 (require 'init-goto-chg)
 (require 'init-avy)
 (require 'init-highlight-symbol)
@@ -64,9 +66,10 @@
 (require 'init-yagist)
 (require 'init-editorconfig)
 (require 'init-auto-compile)
-;; (require 'init-rtags)
+(require 'init-rtags)
 (require 'init-autopair)
-(require 'init-header2)
+;; (require 'init-header2)
+(require 'init-undo-tree)
 
 (require 'init-markdown-mode)
 (require 'init-writegood-mode)
@@ -84,4 +87,12 @@
 (require 'init-rust-mode)
 (require 'init-php-mode)
 
+;; (require 'init-haskell-mode)
+;; (require 'init-slime)
+
 ;; load scripts
+
+(setq c-default-style "linux"
+      c-basic-offset 8)
+
+(global-undo-tree-mode 1)
