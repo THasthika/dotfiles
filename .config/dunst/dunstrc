@@ -1,6 +1,6 @@
 [global]
     font = "Source Sans Pro 10"
-    allow_markup = yes
+    markup = yes
     format = "<b>%s</b>\n%b"
     sort = yes
     indicate_hidden = yes
@@ -19,31 +19,32 @@
     separator_height = 2
     padding = 8
     horizontal_padding = 8
-    separator_color = "#444444"
+    frame_color = "#c5c8c6"
+    frame_width = 1
+    separator_color = "#c5c8c6"
     startup_notification = false
     shrink = true
 
-[frame]
-    width = 1
-    color = "#383838"
+[urgency_low]
+    msg_urgency = low
+    background = "#282a2e"
+    foreground = "#969896"
+    timeout = 5
+
+[urgency_normal]
+    msg_urgency = normal
+    background = "#373b41"
+    foreground = "#c5c8c6"
+    timeout = 20
+
+[urgency_critical]
+    msg_urgency = critical
+    background = "#cc6666"
+    foreground = "#e0e0e0"
+    timeout = 0
 
 [shortcuts]
     close = ctrl+space
     close_all = ctrl+shift+space
     history = ctrl+grave
-    context = ctrl+shift+period
 
-[urgency_low]
-    background = "#222222"
-    foreground = "#888A85"
-    timeout = 5
-
-[urgency_normal]
-    background = "#222222"
-    foreground = "#888A85"
-    timeout = 20
-
-[urgency_critical]
-    background = "#222222"
-    foreground = "#888A85"
-    timeout = 0
