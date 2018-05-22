@@ -13,41 +13,48 @@ PS1='[\u@\h \W]\$ '
 
 complete -cf sudo
 
-parse_git_branch() {
-	git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/[\1]/'
+alias config='/usr/bin/git --git-dir=/home/tharindu/.cfg/ --work-tree=/home/tharindu'
+
+## CUSTOM PROMPT
+
+function my_prompt_parse_git_branch() {
+	local branch=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/[\1]/')
+	if [[ -n $branch ]]; then
+		echo " $branch"
+	fi
 }
 
-function custom01 {
+function my_prompt() {
     local COLOR_GREY="\[\e[30;1m\]"
     local COLOR_RED="\[\e[31;1m\]"
     local COLOR_BLUE="\[\e[34;1m\]"
     local COLOR_GREEN="\[\e[32;1m\]"
     local COLOR_RESET="\[\e[0m\]"
 
-    local COLOR_USER_AND_HOST="${COLOR_BLUE}"
-    local PROMPT_SYMBOL="$"
+    local username=$(whoami)
 
-    if [[ $EUID -eq 0 ]]; then
-        COLOR_USER_AND_HOST="${COLOR_RED}"
-	PROMPT_SYMBOL="#"
+    local PROMPT_USER="${COLOR_BLUE}(\u@\h)"
+    local PROMPT_PWD="${COLOR_GREEN}\W"
+    local PROMPT_SYMBOL="${COLOR_GREY}$"
+
+    if [[ $HOSTNAME -eq "tharindu-lap" ]]; then
+	PROMPT_USER="${COLOR_BLUE}(\u)"
     fi
 
-    PS1="${COLOR_GREY}("
-    PS1+="${COLOR_USER_AND_HOST}\u@\h"
-    PS1+="${COLOR_GREY})"
-    PS1+=" ${COLOR_GREEN}\w"
+    if [[ $EUID -eq 0 ]]; then
+	PROMPT_SYMBOL="${COLOR_RED}#"
+    fi
+
+    if [[ $username -eq "tharindu" ]]; then
+	PROMPT_USER=""
+    fi
+
+    PS1="${PROMPT_USER}${PROMPT_PWD}"
     PS1+="${COLOR_BLUE}"
-    PS1+=' $(parse_git_branch)'
-    PS1+=" ${COLOR_GREY}${PROMPT_SYMBOL} "
-    PS1+="${COLOR_RESET}"
+    PS1+='$(my_prompt_parse_git_branch)'
+    PS1+=" ${PROMPT_SYMBOL}${COLOR_RESET} "
 }
 
-if [[ $TERM == "screen-256color" ]]; then
-	custom01
-fi
-
-alias config='/usr/bin/git --git-dir=/home/tharindu/.cfg/ --work-tree=/home/tharindu'
-
-if [[ $TERM ==  "rxvt-unicode-256color" ]]; then
-	exec tmux
+if [[ $TERM == "screen" ]] || [[ $TERM == "screen-256color" ]] || [[ $TERM == "xterm-256color" ]] || [[ $TERM == "rxvt-unicode-256color" ]]; then
+	my_prompt
 fi
