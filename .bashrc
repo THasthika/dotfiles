@@ -60,149 +60,48 @@ if [ -n "$force_color_prompt" ]; then
     fi
 fi
 
-parse_git_branch() {
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ [\1]/'
+alias config='/usr/bin/git --git-dir=/home/tharindu/.cfg/ --work-tree=/home/tharindu'
+
+## CUSTOM PROMPT
+
+function my_prompt_parse_git_branch() {
+	local branch=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/[\1]/')
+	if [[ -n $branch ]]; then
+		echo " $branch"
+	fi
 }
 
-function custom01 {
+function my_prompt() {
     local COLOR_GREY="\[\e[30;1m\]"
     local COLOR_RED="\[\e[31;1m\]"
     local COLOR_BLUE="\[\e[34;1m\]"
     local COLOR_GREEN="\[\e[32;1m\]"
     local COLOR_RESET="\[\e[0m\]"
 
-    local COLOR_USER_AND_HOST="${COLOR_BLUE}"
-    local PROMPT_SYMBOL="$"
+    local username=$(whoami)
 
-    if [[ $EUID -eq 0 ]]; then
-        COLOR_USER_AND_HOST="${COLOR_RED}"
-	PROMPT_SYMBOL="#"
+    local PROMPT_USER="${COLOR_BLUE}(\u@\h)"
+    local PROMPT_PWD="${COLOR_GREEN}\W"
+    local PROMPT_SYMBOL="${COLOR_GREY}$"
+
+    if [[ $HOSTNAME -eq "tharindu-lap" ]]; then
+	PROMPT_USER="${COLOR_BLUE}(\u)"
     fi
 
-    PS1="${COLOR_RESET}${debian_chroot:+($debian_chroot)}${COLOR_GREY}("
-    PS1+="${COLOR_USER_AND_HOST}\u@\h"
-    PS1+="${COLOR_GREY})"
-    PS1+=" ${COLOR_GREEN}\w"
+    if [[ $EUID -eq 0 ]]; then
+	PROMPT_SYMBOL="${COLOR_RED}#"
+    fi
+
+    if [[ $username -eq "tharindu" ]]; then
+	PROMPT_USER=""
+    fi
+
+    PS1="${PROMPT_USER}${PROMPT_PWD}"
     PS1+="${COLOR_BLUE}"
-    PS1+='$(parse_git_branch)'
-    PS1+=" ${COLOR_GREY}${PROMPT_SYMBOL} "
-    PS1+="${COLOR_RESET}"
+    PS1+='$(my_prompt_parse_git_branch)'
+    PS1+=" ${PROMPT_SYMBOL}${COLOR_RESET} "
 }
 
-if [ "$color_prompt" = yes ]; then
-    # PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-    custom01
-else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-fi
-unset color_prompt force_color_prompt
-
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
-
-# colored GCC warnings and errors
-#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
-
-# some more ls aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-
-# Add an "alert" alias for long running commands.  Use like so:
-#   sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-
-# Alias definitions.
-# You may want to put all your additions into a separate file like
-# ~/.bash_aliases, instead of adding them here directly.
-# See /usr/share/doc/bash-doc/examples in the bash-doc package.
-
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
-fi
-
-# If this is an xterm set more declarative titles 
-# "dir: last_cmd" and "actual_cmd" during execution
-# If you want to exclude a cmd from being printed see line 156
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\$(print_title)\a\]$PS1"
-    __el_LAST_EXECUTED_COMMAND=""
-    print_title () 
-    {
-        __el_FIRSTPART=""
-        __el_SECONDPART=""
-        if [ "$PWD" == "$HOME" ]; then
-            __el_FIRSTPART=$(gettext --domain="pantheon-files" "Home")
-        else
-            if [ "$PWD" == "/" ]; then
-                __el_FIRSTPART="/"
-            else
-                __el_FIRSTPART="${PWD##*/}"
-            fi
-        fi
-        if [[ "$__el_LAST_EXECUTED_COMMAND" == "" ]]; then
-            echo "$__el_FIRSTPART"
-            return
-        fi
-        #trim the command to the first segment and strip sudo
-        if [[ "$__el_LAST_EXECUTED_COMMAND" == sudo* ]]; then
-            __el_SECONDPART="${__el_LAST_EXECUTED_COMMAND:5}"
-            __el_SECONDPART="${__el_SECONDPART%% *}"
-        else
-            __el_SECONDPART="${__el_LAST_EXECUTED_COMMAND%% *}"
-        fi 
-        printf "%s: %s" "$__el_FIRSTPART" "$__el_SECONDPART"
-    }
-    put_title()
-    {
-        __el_LAST_EXECUTED_COMMAND="${BASH_COMMAND}"
-        printf "\033]0;%s\007" "$1"
-    }
-    
-    # Show the currently running command in the terminal title:
-    # http://www.davidpashley.com/articles/xterm-titles-with-bash.html
-    update_tab_command()
-    {
-        # catch blacklisted commands and nested escapes
-        case "$BASH_COMMAND" in 
-            *\033]0*|update_*|echo*|printf*|clear*|cd*)
-            __el_LAST_EXECUTED_COMMAND=""
-                ;;
-            *)
-            put_title "${BASH_COMMAND}"
-            ;;
-        esac
-    }
-    preexec_functions+=(update_tab_command)
-    ;;
-*)
-    ;;
-esac
-
-
-alias config='/usr/bin/git --git-dir=/home/tharindu/.cfg/ --work-tree=/home/tharindu'
-
-if [[ $TERM ==  "xterm-256color" ]]; then
-	exec tmux
+if [[ $TERM == "screen" ]] || [[ $TERM == "screen-256color" ]] || [[ $TERM == "xterm-256color" ]] || [[ $TERM == "rxvt-unicode-256color" ]]; then
+	my_prompt
 fi
