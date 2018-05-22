@@ -37,7 +37,7 @@ separator_block_width=15
 markup=none
 
 [mediaplayer]
-label=
+label=
 interval=once
 signal=12
 
