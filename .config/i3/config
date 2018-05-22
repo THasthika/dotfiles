@@ -2,9 +2,10 @@
 # Variables
 # =============================================================================
 
-set $browser "chromium"
+set $browser "google-chrome-stable"
 set $editor "emacs"
 set $terminal "urxvtc"
+set $terminal_tmux "urxvtc -e tmux"
 set $filebrowser "thunar"
 set $calibre "calibre"
 set $musicplayer "sonata"
@@ -87,7 +88,7 @@ bar {
 # Assign windows to their respective workspaces.
 assign [class="URxvt|Termite"] $WS1
 assign [class="Emacs|Atom|jetbrains*|MATLAB*"] $WS2
-assign [class="Chromium|Firefox"] $WS3
+assign [class="Chromium|Firefox|Google-chrome"] $WS3
 assign [class="calibre|Zathura"] $WS4
 assign [class="Thunar"] $WS5
 assign [class="VirtualBox|Qemu*"] $WS6
@@ -107,7 +108,7 @@ for_window [window_role="task_dialog"] floating enable
 for_window [class="calibre|Zathura"] layout tabbed
 
 # Remove the titlebar.
-for_window [class="Chromium|Firefox|Emacs|Atom|URxvt|Zathura|calibre|Termite"] border pixel 1
+for_window [class="Chromium|Google-chrome|Firefox|Emacs|Atom|URxvt|Zathura|calibre|Termite"] border pixel 1
 
 # =============================================================================
 # Keybinds
@@ -128,6 +129,8 @@ floating_modifier $mod
 # application shortcuts
 
 bindsym $mod+Return exec $terminal, workspace $WS1
+
+bindsym $mod+Shift+Return exec $terminal_tmux, workspace $WS1
 
 
 # kill focused window
@@ -311,28 +314,28 @@ exec --no-startup-id urxvtd -q -f -o &
 exec --no-startup-id compton -bc &
 
 # Set wallpaper.
-exec --no-startup-id nitrogen --restore &
+#exec --no-startup-id nitrogen --restore &
 
 # UDisks front-end for managing removable media.
-exec --no-startup-id udiskie -ans &
+#exec --no-startup-id udiskie -ans &
 
 # Launch the notification daemon.
-exec --no-startup-id dunst &
+#exec --no-startup-id dunst &
 
 # NetworkManager Applet
 exec --no-startup-id nm-applet &
 
 # Transmission
-exec --no-startup-id transmission-gtk -m &
+#exec --no-startup-id transmission-gtk -m &
 
 # Start MPDd
-exec --no-startup-id mpdd &
+#exec --no-startup-id mpdd &
 
 # MPCd
-exec --no-startup-id mpcd -f &
+#exec --no-startup-id mpcd -f &
 
 # Bluetooth Applet
-exec --no-startup-id blueman-applet &
+#exec --no-startup-id blueman-applet &
 
 # Start Keyboard monitoring for disabling touchpad
 #exec --no-startup-id syndaemon -i 0.5 -t -K -R &
