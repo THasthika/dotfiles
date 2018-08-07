@@ -17,12 +17,19 @@ vno <left> <Nop>
 vno <right> <Nop>
 
 " Tab Mapping
-nnoremap <leader><S-tab> :tabprevious<CR>
-nnoremap <leader><tab>   :tabnext<CR>
-nnoremap <leader>t     :tabnew<CR>
-inoremap <leader><S-tab> <Esc>:tabprevious<CR>
-inoremap <leader><tab>   <Esc>:tabnext<CR>
-inoremap <leader>t     <Esc>:tabnew<CR>
+
+execute "set <M-j>=\ej"
+execute "set <M-k>=\ek"
+
+nnoremap <M-j> :tabprevious<CR>
+nnoremap <M-k> :tabnext<CR>
+
+inoremap <M-h> <Esc>:tabprevious<CR>
+inoremap <M-l> <Esc>:tabnext<CR>
+
+nnoremap <C-t> :tabnew<CR>
+inoremap <C-t> <Esc>:tabnew<CR>
+
 
 " NERDTree Mapping
 map <C-n> :NERDTreeToggle<CR>
