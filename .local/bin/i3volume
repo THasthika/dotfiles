@@ -1,0 +1,19 @@
+#!/bin/bash
+
+MIXER="pulse"
+SCONTROL="Master"
+STEP=5%
+
+case "$1" in
+    up)
+        amixer -q -D $MIXER sset $SCONTROL ${STEP}+ unmute
+    ;;
+    down)
+        amixer -q -D $MIXER sset $SCONTROL ${STEP}- unmute
+    ;;
+    toggle)
+        amixer -q -D $MIXER sset $SCONTROL toggle
+    ;;
+esac
+
+pkill -SIGRTMIN+10 i3blocks

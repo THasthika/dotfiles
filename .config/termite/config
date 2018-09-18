@@ -1,0 +1,96 @@
+[options]
+#allow_bold = true
+#audible_bell = false
+#clickable_url = true
+#dynamic_title = true
+font = Monospace 9
+#fullscreen = true
+#geometry = 640x480
+#icon_name = terminal
+#mouse_autohide = false
+#scroll_on_output = false
+#scroll_on_keystroke = true
+# Length of the scrollback buffer, 0 disabled the scrollback buffer
+# and setting it to a negative value means "infinite scrollback"
+scrollback_lines = 10000
+#search_wrap = true
+#urgent_on_bell = true
+#hyperlinks = false
+
+# $BROWSER is used by default if set, with xdg-open as a fallback
+#browser = xdg-open
+
+# "system", "on" or "off"
+#cursor_blink = system
+
+# "block", "underline" or "ibeam"
+#cursor_shape = block
+
+# Hide links that are no longer valid in url select overlay mode
+#filter_unmatched_urls = true
+
+# Emit escape sequences for extra modified keys
+#modify_other_keys = false
+
+# set size hints for the window
+#size_hints = false
+
+# "off", "left" or "right"
+#scrollbar = off
+
+[colors]
+foreground = #c5c8c6
+foreground_bold = #ffffff
+#foreground_dim = #888888
+#background = #ededed
+background = #1d1f21
+#cursor = #aeafad
+
+# if unset, will reverse foreground and background
+highlight = #d6d6d6
+
+# colors from color0 to color254 can be set
+# Black + Grey
+color0 = #1d1f21
+color8 = #969896
+
+# Red + Bright Red
+color1 = #912226
+color9 = #cc6666
+
+# Green + Bright Green
+color2 = #778900
+color10 = #b5bd68
+
+# Yellow (Orange) + Bright Yellow (Yellow)
+color3 = #ae7b00
+color11 = #f0c674
+
+# Blue + Bright Blue
+color4 = #1d2594
+color12 = #81a2be
+
+# Magenta (Purple) + Bright Magenta
+color5 = #682a9b
+color13 = #b294bb
+
+# Cyan (Aqua) + Bright Cyan
+color6 = #2b6651
+color14 = #8abeb7
+
+# Light Grey (Selection) + White (Current Line)
+color7 = #929593
+color15 = #ecebec
+
+[hints]
+#font = Monospace 12
+#foreground = #dcdccc
+#background = #3f3f3f
+#active_foreground = #e68080
+#active_background = #3f3f3f
+#padding = 2
+#border = #3f3f3f
+#border_width = 0.5
+#roundness = 2.0
+
+# vim: ft=dosini cms=#%s

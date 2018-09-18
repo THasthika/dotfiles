@@ -1,0 +1,22 @@
+#!/bin/bash
+
+MIXER="pulse"
+SCONTROL="Master"
+STEP=5%
+
+case "$1" in
+    toggle)
+        mpc toggle
+    ;;
+    next)
+        mpc next
+    ;;
+    prev)
+        mpc prev
+    ;;
+    remove)
+        mpc del 0
+    ;;
+esac
+
+pkill -SIGRTMIN+12 i3blocks
