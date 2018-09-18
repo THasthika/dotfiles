@@ -1,0 +1,20 @@
+#!/bin/bash
+
+LOCK=/tmp/mpc-notify.lock
+
+
+function finish {
+    rm -f $LOCK
+}
+
+[ -f $LOCK ] && echo "Lock file present!" && exit 1
+
+trap finish EXIT
+
+echo $$ > $LOCK
+
+while true
+do
+    mpc idle
+    pkill -SIGRTMIN+12 i3blocks
+done
