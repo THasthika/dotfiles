@@ -10,6 +10,7 @@
 # Please see https://i3wm.org/docs/userguide.html for a complete reference!
 
 set $mod Mod4
+set $alt Mod1
 
 set $TERMINAL termite
 
@@ -33,9 +34,13 @@ floating_modifier $mod
 
 hide_edge_borders smart
 
+gaps inner 15
+gaps outer 0
+smart_gaps on
+
 # start a terminal
-bindsym $mod+Return exec $TERMINAL, workspace $ws1
-bindsym $mod+Shift+Return exec $TERMINAL -e tmux, workspace $ws1
+bindsym $mod+Return exec $TERMINAL -e tmux, workspace $ws1
+bindsym $mod+Shift+Return exec $TERMINAL, workspace $ws1
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -104,9 +109,9 @@ set $ws2 "2 "
 set $ws3 "3 "
 set $ws4 "4 "
 set $ws5 "5 "
-set $ws6 "6"
-set $ws7 "7"
-set $ws8 "8"
+set $ws6 "6 "
+set $ws7 "7 "
+set $ws8 "8 "
 set $ws9 "9 "
 set $ws10 "10 "
 
@@ -145,8 +150,8 @@ bindsym XF86AudioLowerVolume exec --no-startup-id i3volume down && pkill -SIGRTM
 bindsym XF86AudioMute exec --no-startup-id i3volume toggle && pkill -SIGRTMIN+10 i3blocks # mute sound
 
 # Sreen brightness controls
-bindsym XF86MonBrightnessUp exec xbacklight -inc 20 # increase screen brightness
-bindsym XF86MonBrightnessDown exec xbacklight -dec 20 # decrease screen brightness
+bindsym XF86MonBrightnessUp exec xbacklight -inc 10 # increase screen brightness
+bindsym XF86MonBrightnessDown exec xbacklight -dec 10 # decrease screen brightness
 
 bindsym XF86KbdBrightnessUp exec i3kb-light + 1
 bindsym XF86KbdBrightnessDown exec i3kb-light - 1
@@ -166,14 +171,39 @@ bindsym $mod+Shift+p exec i3mpd-control remove
 
 assign [class="Termite"] $ws1
 assign [class="code"] $ws2
-assign [class="Chromium"] $ws3
+assign [class="Chromium|Firefox"] $ws3
 assign [class="Thunar"] $ws4
 assign [class="calibre|Zathura"] $ws5
+assign [class="Qemu*"] $ws6
+assign [class="^Steam$"] $ws7
+assign [class="Deluge"] $ws8
 assign [class="vlc"] $ws9
+assign [class="spotify|Spotify|Sonata"] $ws10
+
+for_window [class="Spotify"] move to workspace $ws10
+for_window [class="calibre|Zathura"] layout tabbed
+
+# Custom Key Bindings
+bindsym $alt+Tab exec --no-startup-id rofi -show window -theme /home/tharindu/.config/rofi/themes/onedark.rasi
+bindsym $mod+q exec --no-startup-id rofi -modi drun -show drun -eh 2 -padding 400 -fullscreen -theme /home/tharindu/.config/rofi/themes/onedark.rasi
+
+bindsym Print exec scrot -e 'mv $f ~/Pictures/Screenshots/'
+bindsym $mod+Print exec scrot -s -e 'mv $f ~/Pictures/Screenshots/'
 
 # Remove top bar
+for_window [class="Firefox|Termite|code|Chromium|Thunar|calibre|Zathura|vlc|Spotify|Sonata"] border pixel 1
 
-for_window [class="Termite|code|Chromium|Thunar|calibre|Zathura|vlc"] border pixel 1
+# STEAM CONFIG
+for_window [class="^Steam$" title="^Friends$"] floating enable
+for_window [class="^Steam$" title="Steam - News"] floating enable
+for_window [class="^Steam$" title=".* - Chat"] floating enable
+for_window [class="^Steam$" title="^Settings$"] floating enable
+for_window [class="^Steam$" title=".* - event started"] floating enable
+for_window [class="^Steam$" title=".* CD key"] floating enable
+for_window [class="^Steam$" title="^Steam - Self Updater$"] floating enable
+for_window [class="^Steam$" title="^Screenshot Uploader$"] floating enable
+for_window [class="^Steam$" title="^Steam Guard - Computer Authorization Required$"] floating enable
+for_window [title="^Steam Keyboard$"] floating enable
 
 # resize window (you can also use the mouse for that)
 mode "resize" {
@@ -201,12 +231,14 @@ mode "resize" {
 }
 bindsym $mod+r mode "resize"
 
-set $mode_launcher (b)rowser, (f)ilemanager, (e)ditor, (c)alibre
+set $mode_launcher (b)rowser, (f)ilemanager, (e)ditor, (c)alibre, (i)ncognito, (m)usic-player
 mode "$mode_launcher" {
-   bindsym b exec chromium, workspace $ws3, mode "default"
-   bindsym f exec thunar, workspace $ws4,  mode "default"
-   bindsym e exec code, workspace $ws2, mode "default"
-   bindsym c exec calibre, workspace $ws5, mode "default"
+   bindsym b exec --no-startup-id chromium, workspace $ws3, mode "default"
+   bindsym i exec --no-startup-id chromium --incognito, workspace $ws3, mode "default"
+   bindsym f exec --no-startup-id thunar, workspace $ws4,  mode "default"
+   bindsym e exec --no-startup-id code, workspace $ws2, mode "default"
+   bindsym c exec --no-startup-id calibre, workspace $ws5, mode "default"
+   bindsym m exec --no-startup-id sonata, workspace $ws10, mode "default"
 
    bindsym Escape mode "default"
    bindsym Return mode "default"
@@ -234,7 +266,7 @@ bindsym --release XF86PowerOff mode "$mode_system"
 # Colors
 
 
-#color class		border  bg	text	indicator
+#color class		border  bg	text	indicator  child_border
 client.focused          #171f27 #171f27 #ffffff  #ffffff   #171f27
 client.focused_inactive #1d2121 #1d2121 #a1a1a1  #484e50   #1d2121
 client.unfocused        #333333 #222222 #888888  #292d2e   #222222
@@ -244,6 +276,7 @@ client.background       #111111
 
 
 bar {
+        # i3bar_command i3blocks -t -c ~/.config/i3blocks/i3blocks.conf
         status_command i3blocks -c ~/.config/i3blocks/i3blocks.conf
         colors {
                 statusline    #ffffff
@@ -264,3 +297,4 @@ exec --no-startup-id nm-applet
 exec --no-startup-id udiskie -s -a
 exec --no-startup-id nitrogen --restore
 exec --no-startup-id mpc-notify
+exec --no-startup-id deluge

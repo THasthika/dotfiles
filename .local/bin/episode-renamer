@@ -28,6 +28,14 @@ get_season_number () (
 	exit 0
     fi
 
+    # ###
+    sno=$(echo "$1" | grep -m 1 -P -o '\d{3}' | grep -m 1 -P -o '^\d{1}')
+    if [[ $? -eq 0 ]]
+    then
+    echo 0$sno
+    exit 0
+    fi
+
     echo "Season number could not be found!"
     exit 1
 )
@@ -52,6 +60,14 @@ get_episode_number () (
     then
 	echo $eno
 	exit 0
+    fi
+
+    # ###
+    eno=$(echo "$1" | grep -m 1 -P -o '\d{3}' | grep -m 1 -P -o '\d{2}$')
+    if [[ $? -eq 0 ]]
+    then
+    echo $eno
+    exit 0
     fi
 
     echo "Episode number could not be found!"
