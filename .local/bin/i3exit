@@ -3,23 +3,33 @@ lock() {
     i3blur
 }
 
+stop_mpd() {
+    mpc stop
+}
+
 case "$1" in
     lock)
+        stop_mpd
         lock
         ;;
     logout)
+        stop_mpd
         i3-msg exit
         ;;
     suspend)
+        stop_mpd
         lock && systemctl suspend
         ;;
     hibernate)
+        stop_mpd
         lock && systemctl hibernate
         ;;
     reboot)
+        stop_mpd
         systemctl reboot
         ;;
     shutdown)
+        stop_mpd
         systemctl poweroff
         ;;
     *)

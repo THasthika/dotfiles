@@ -1,0 +1,10 @@
+*
+!.gitignore
+!episode-renamer
+!sleep-until-midnight
+!i3blur
+!i3exit
+!i3kb-light
+!i3mpd-control
+!i3volume
+!mpc-notify
