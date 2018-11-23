@@ -53,3 +53,10 @@ function my_prompt() {
 if [[ $TERM == "screen" ]] || [[ $TERM == "screen-256color" ]] || [[ $TERM == "xterm-256color" ]] || [[ $TERM == "rxvt-unicode-256color" ]]; then
 	my_prompt
 fi
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+export PATH="$PATH:$HOME/.rvm/bin"
