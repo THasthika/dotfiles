@@ -1,20 +1,20 @@
 
 " Unmap Arrow Keys
 
-no <down> ddp
-no <up> ddkP
-no <left> :bnext<CR>
-no <right> :bprevious<CR>
+"no <down> ddp
+"no <up> ddkP
+"no <left> :bnext<CR>
+"no <right> :bprevious<CR>
 
-ino <down> <Nop>
-ino <up> <Nop>
-ino <left> <Nop>
-ino <right> <Nop>
+"ino <down> <Nop>
+"ino <up> <Nop>
+"ino <left> <Nop>
+"ino <right> <Nop>
 
-vno <down> <Nop>
-vno <up> <Nop>
-vno <left> <Nop>
-vno <right> <Nop>
+"vno <down> <Nop>
+"vno <up> <Nop>
+"vno <left> <Nop>
+"vno <right> <Nop>
 
 " NERDTree Mapping
 map <C-n> :NERDTreeToggle<CR>

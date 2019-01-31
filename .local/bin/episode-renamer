@@ -9,7 +9,7 @@ fi
 get_season_number () (
 
     # Season.*# | Season.*##
-    sno=$(echo "$1" | grep -m 1 -P -o 'Season[ ]*?\d{1,2}' | grep -m 1 -P -o '\d{1,2}')
+    sno=$(echo "$1" | grep -Eio 'Season[ ]*?\d{1,2}' | grep -Eio '\d{1,2}')
     if [[ $? -eq 0 ]]
     then
 	if [[ ${#sno} -eq 1 ]]
@@ -21,7 +21,7 @@ get_season_number () (
     fi
 
     # S##
-    sno=$(echo "$1" | grep -m 1 -P -o 'S\d{2}' | grep -m 1 -P -o '\d{2}')
+    sno=$(echo "$1" | grep -Eio 'S\d{2}' | grep -Eio '\d{2}')
     if [[ $? -eq 0 ]]
     then
 	echo $sno
@@ -35,7 +35,7 @@ get_season_number () (
 get_episode_number () (
 
     # Episode.*# | Episode.*##
-    eno=$(echo "$1" | grep -m 1 -P -o 'Episode[ ]*\d{1,2}' | grep -m 1 -P -o '\d{1,2}')
+    eno=$(echo "$1" | grep -Eio 'Episode[ ]*\d{1,2}' | grep -Eio '\d{1,2}')
     if [[ $? -eq 0 ]]
     then
 	if [[ ${#eno} -eq 1 ]]
@@ -47,7 +47,7 @@ get_episode_number () (
     fi
 
     # E##
-    eno=$(echo "$1" | grep -m 1 -P -o 'E\d{2}' | grep -m 1 -P -o '\d{2}')
+    eno=$(echo "$1" | grep -Eio 'E\d{2}' | grep -Eio '\d{2}')
     if [[ $? -eq 0 ]]
     then
 	echo $eno
@@ -60,7 +60,7 @@ get_episode_number () (
 
 get_extension () {
 
-    ext=$(echo "$1" | grep -P -o '\..{3,4}$')
+    ext=$(echo "$1" | grep -Eio '\..{3,4}$')
     if [[ $? -eq 0 ]]
     then
 	echo $ext
