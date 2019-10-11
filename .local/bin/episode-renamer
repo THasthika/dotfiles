@@ -54,6 +54,18 @@ get_episode_number () (
 	exit 0
     fi
 
+    # ep## ep#
+    eno=$(echo "$1" | grep -Eio 'ep\d{1,2}' | grep -Eio '\d{1,2}')
+    if [[ $? -eq 0 ]]
+	if [[ ${#eno} -eq 1 ]]
+	then
+	    eno=0$eno
+	fi
+    then
+	echo $eno
+	exit 0
+    fi
+
     echo "Episode number could not be found!"
     exit 1
 )
