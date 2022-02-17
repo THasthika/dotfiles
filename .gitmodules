@@ -9,7 +9,7 @@
 	url = https://github.com/tmux-plugins/tmux-sensible.git
 [submodule ".tmux/plugins/tpm"]
 	path = .tmux/plugins/tpm
-	url = https://github.com/tmux-plugins/tpm.git
+	url = https://github.com/tmux-plugins/tpm
 [submodule ".tmux/plugins/tmux-themepack"]
 	path = .tmux/plugins/tmux-themepack
 	url = https://github.com/jimeh/tmux-themepack.git
@@ -22,3 +22,9 @@
 [submodule ".vim/bundle/nerdcommenter"]
 	path = .vim/bundle/nerdcommenter
 	url = https://github.com/scrooloose/nerdcommenter.git
+[submodule ".vim/bundle/vim-airline"]
+	path = .vim/bundle/vim-airline
+	url = https://github.com/vim-airline/vim-airline.git
+[submodule ".vim/bundle/vim-airline-themes"]
+	path = .vim/bundle/vim-airline-themes
+	url = https://github.com/vim-airline/vim-airline-themes

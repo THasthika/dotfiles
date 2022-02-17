@@ -1,4 +1,5 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhistcnt =2
+let g:netrw_dirhistcnt =3
+let g:netrw_dirhist_3='/Users/tharindu/Software/dotfiles/.vim/bundle/nerdtree'
 let g:netrw_dirhist_2='/Users/tharindu/Software/dotfiles/.tmux/plugins/tmux-themepack'
 let g:netrw_dirhist_1='/Users/tharindu/Software/dotfiles/.tmux/plugins'

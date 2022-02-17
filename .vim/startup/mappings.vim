@@ -28,3 +28,9 @@ imap <leader>[ []<ESC>i
 
 " Insert Abbriviations
 imap <leader>email tharindubathigama@gmail.com
+
+" Paste keep buffer
+
+vnoremap <leader>p "_dP
+
+
