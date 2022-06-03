@@ -13,6 +13,19 @@ let g:airline#extensions#tabline#enabled = 1
 let g:airline_theme = 'simple'
 let g:Powerline_symbols = 'fancy'
 
+" Create default mappings
+let g:NERDCreateDefaultMappings = 1
+" Add spaces after comment delimiters by default
+let g:NERDSpaceDelims = 1
+" Use compact syntax for prettified multi-line comments
+let g:NERDCompactSexyComs = 1
+" Align line-wise comment delimiters flush left instead of following code indentation
+let g:NERDDefaultAlign = 'left'
+" Enable NERDCommenterToggle to check all selected lines is commented or not
+let g:NERDToggleCheckAllLines = 1
+" Allow commenting and inverting empty lines (useful when commenting a region)
+let g:NERDCommentEmptyLines = 1
+
 set guifont=Inconsolata\ for\ Powerline:h15
 set encoding=utf-8
 set t_Co=256
