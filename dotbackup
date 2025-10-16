@@ -1,0 +1,409 @@
+#!/usr/bin/env bash
+# dotbackup - create snapshot backup of OS dotfiles
+# Creates a timestamped zip file containing all configs from config.yaml
+set -euo pipefail
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Get the project root directory
+get_project_root() {
+    if git_root=$(git rev-parse --show-toplevel 2>/dev/null); then
+        printf '%s' "$git_root"
+    else
+        local src="${BASH_SOURCE[0]}"
+        while [ -L "$src" ]; do
+            src="$(readlink "$src")"
+        done
+        printf '%s' "$(cd "$(dirname "$src")" >/dev/null 2>&1 && pwd)"
+    fi
+}
+
+PROJECT_ROOT="$(get_project_root)"
+CONFIG_FILE="$PROJECT_ROOT/config.yaml"
+
+# Parse YAML using yq
+parse_yaml() {
+    local query="$1"
+    
+    # Detect yq version and use appropriate syntax
+    if yq --version 2>&1 | grep -q "mikefarah/yq"; then
+        # Go-based yq (mikefarah) - version 4.x
+        yq eval "$query" "$CONFIG_FILE"
+    else
+        # Python-based yq (kislyuk) - version 3.x or jq-wrapper style
+        # Convert our query syntax to yq 3.x style
+        if [[ "$query" == ".mappings | length" ]]; then
+            yq -r '.mappings | length' "$CONFIG_FILE"
+        elif [[ "$query" =~ \.mappings\[([0-9]+)\]\.source ]]; then
+            local idx="${BASH_REMATCH[1]}"
+            yq -r ".mappings[$idx].source" "$CONFIG_FILE"
+        elif [[ "$query" =~ \.mappings\[([0-9]+)\]\.dest ]]; then
+            local idx="${BASH_REMATCH[1]}"
+            yq -r ".mappings[$idx].dest" "$CONFIG_FILE"
+        fi
+    fi
+}
+
+# Get number of mappings
+get_mapping_count() {
+    parse_yaml '.mappings | length'
+}
+
+# Get source for mapping at index
+get_mapping_source() {
+    local idx="$1"
+    parse_yaml ".mappings[$idx].source"
+}
+
+# Get dest for mapping at index
+get_mapping_dest() {
+    local idx="$1"
+    local dest
+    dest=$(parse_yaml ".mappings[$idx].dest")
+    # Expand ~ to $HOME
+    dest="${dest/#\~/$HOME}"
+    echo "$dest"
+}
+
+# Parse config.yaml and iterate over mappings using yq
+iterate_mappings() {
+    local callback="$1"
+    shift
+    
+    local count
+    count=$(get_mapping_count)
+    
+    for ((i=0; i<count; i++)); do
+        local source
+        local dest
+        source=$(get_mapping_source "$i")
+        dest=$(get_mapping_dest "$i")
+        
+        "$callback" "$source" "$dest" "$@"
+    done
+}
+
+# Create backup
+create_backup() {
+    local output_dir="${1:-$PROJECT_ROOT/backups}"
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    local backup_file="$output_dir/dotfiles_backup_${timestamp}.zip"
+    
+    # Create output directory if it doesn't exist
+    mkdir -p "$output_dir"
+    
+    # Create temporary directory for staging files
+    local temp_dir
+    temp_dir=$(mktemp -d)
+    trap "rm -rf '$temp_dir'" EXIT
+    
+    echo "Creating backup of dotfiles..."
+    echo ""
+    
+    local total=0
+    local backed_up=0
+    local missing=0
+    
+    # Callback to copy files to temp directory
+    backup_callback() {
+        local source="$1"
+        local dest="$2"
+        
+        total=$((total + 1))
+        
+        if [[ ! -e "$dest" ]]; then
+            echo -e "${YELLOW}⚠${NC} Skipped: $source (does not exist at $dest)"
+            missing=$((missing + 1))
+            return 0
+        fi
+        
+        # Create directory structure in temp location
+        local temp_path="$temp_dir/$source"
+        mkdir -p "$(dirname "$temp_path")"
+        
+        # Copy file or directory
+        if [[ -d "$dest" ]]; then
+            cp -r "$dest" "$temp_path"
+            echo -e "${GREEN}✓${NC} Added: $source (directory)"
+        else
+            cp "$dest" "$temp_path"
+            echo -e "${GREEN}✓${NC} Added: $source (file)"
+        fi
+        
+        backed_up=$((backed_up + 1))
+    }
+    
+    iterate_mappings backup_callback
+    
+    echo ""
+    
+    # Create the zip file
+    if [[ $backed_up -gt 0 ]]; then
+        echo "Creating zip archive..."
+        cd "$temp_dir"
+        zip -r -q "$backup_file" .
+        cd - > /dev/null
+        
+        local size
+        size=$(du -h "$backup_file" | cut -f1)
+        
+        echo ""
+        echo -e "${GREEN}✓${NC} Backup created successfully!"
+        echo ""
+        echo "  Location: $backup_file"
+        echo "  Size: $size"
+        echo "  Backed up: $backed_up/$total configs"
+        
+        if [[ $missing -gt 0 ]]; then
+            echo -e "  ${YELLOW}Missing: $missing configs${NC}"
+        fi
+    else
+        echo -e "${RED}Error:${NC} No configs were backed up"
+        exit 1
+    fi
+}
+
+# List recent backups
+list_backups() {
+    local backup_dir="${1:-$PROJECT_ROOT/backups}"
+    
+    if [[ ! -d "$backup_dir" ]]; then
+        echo "No backups directory found at: $backup_dir"
+        return
+    fi
+    
+    echo "Recent backups:"
+    echo ""
+    
+    local count=0
+    while IFS= read -r -d '' file; do
+        local size
+        local date
+        size=$(du -h "$file" | cut -f1)
+        date=$(stat -c %y "$file" | cut -d' ' -f1,2 | cut -d'.' -f1)
+        printf "  %-50s  %8s  %s\n" "$(basename "$file")" "$size" "$date"
+        count=$((count + 1))
+    done < <(find "$backup_dir" -name "dotfiles_backup_*.zip" -type f -print0 | sort -zr)
+    
+    if [[ $count -eq 0 ]]; then
+        echo "  No backups found"
+    else
+        echo ""
+        echo "Total: $count backup(s)"
+    fi
+}
+
+# Restore from backup
+restore_backup() {
+    local backup_file="$1"
+    local force="${2:-0}"
+    
+    # Validate backup file
+    if [[ -z "$backup_file" ]]; then
+        echo -e "${RED}Error:${NC} Please specify a backup file"
+        echo "Usage: $0 restore <backup-file> [-f]"
+        exit 1
+    fi
+    
+    if [[ ! -f "$backup_file" ]]; then
+        echo -e "${RED}Error:${NC} Backup file not found: $backup_file"
+        exit 1
+    fi
+    
+    if [[ ! "$backup_file" =~ \.zip$ ]]; then
+        echo -e "${RED}Error:${NC} Backup file must be a .zip file"
+        exit 1
+    fi
+    
+    echo "Restoring from backup: $(basename "$backup_file")"
+    echo ""
+    
+    # Create temporary directory for extraction
+    local temp_dir
+    temp_dir=$(mktemp -d)
+    trap "rm -rf '$temp_dir'" EXIT
+    
+    # Extract backup
+    echo "Extracting backup..."
+    unzip -q "$backup_file" -d "$temp_dir"
+    
+    local total=0
+    local restored=0
+    local skipped=0
+    
+    # Callback to restore files
+    restore_callback() {
+        local source="$1"
+        local dest="$2"
+        local backup_path="$temp_dir/$source"
+        
+        total=$((total + 1))
+        
+        # Check if file exists in backup
+        if [[ ! -e "$backup_path" ]]; then
+            echo -e "${YELLOW}⚠${NC} Skipped: $source (not in backup)"
+            skipped=$((skipped + 1))
+            return 0
+        fi
+        
+        # Check if destination already exists
+        if [[ -e "$dest" || -L "$dest" ]]; then
+            if [[ $force -eq 0 ]]; then
+                echo -e "${YELLOW}Warning:${NC} $dest already exists"
+                read -r -p "Overwrite? [y/N] " ans </dev/tty
+                case "$ans" in
+                    [Yy]* ) ;;
+                    * ) 
+                        echo "Skipped $source."
+                        skipped=$((skipped + 1))
+                        return 0
+                        ;;
+                esac
+            fi
+            
+            # Remove existing file/directory
+            rm -rf "$dest"
+        fi
+        
+        # Create parent directory
+        mkdir -p "$(dirname "$dest")"
+        
+        # Copy from backup to destination
+        if [[ -d "$backup_path" ]]; then
+            cp -r "$backup_path" "$dest"
+            echo -e "${GREEN}✓${NC} Restored: $source (directory)"
+        else
+            cp "$backup_path" "$dest"
+            echo -e "${GREEN}✓${NC} Restored: $source (file)"
+        fi
+        
+        restored=$((restored + 1))
+    }
+    
+    echo ""
+    iterate_mappings restore_callback
+    
+    echo ""
+    echo -e "${GREEN}✓${NC} Restore completed!"
+    echo ""
+    echo "  Restored: $restored/$total configs"
+    
+    if [[ $skipped -gt 0 ]]; then
+        echo -e "  ${YELLOW}Skipped: $skipped configs${NC}"
+    fi
+}
+
+# Usage/help
+usage() {
+    cat <<EOF
+dotbackup - Dotfiles Backup Tool
+
+Usage:
+    $0 [create] [-o DIR]          Create a new backup (default action)
+    $0 list [-o DIR]              List existing backups
+    $0 restore <file> [-f]        Restore from a backup file
+
+Options:
+    -o, --output DIR              Output directory for backups (default: ./backups)
+    -f, --force                   Skip confirmation prompts (auto-overwrite)
+
+Examples:
+    $0                            # Create backup in ./backups
+    $0 create                     # Same as above
+    $0 -o ~/my-backups            # Create backup in custom directory
+    $0 list                       # List backups in ./backups
+    $0 list -o ~/my-backups       # List backups in custom directory
+    $0 restore backups/dotfiles_backup_20241017_123456.zip
+                                  # Restore from specific backup
+    $0 restore backups/dotfiles_backup_20241017_123456.zip -f
+                                  # Restore without prompts
+
+Notes:
+    - Backup files are named: dotfiles_backup_YYYYMMDD_HHMMSS.zip
+    - Only configs defined in config.yaml are included
+    - Skips configs that don't exist in the OS during backup
+    - During restore, prompts before overwriting existing files (unless -f is used)
+
+EOF
+    exit 0
+}
+
+# Main command dispatcher
+main() {
+    # Check if config.yaml exists
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        echo -e "${RED}Error:${NC} config.yaml not found in $PROJECT_ROOT"
+        exit 1
+    fi
+    
+    local cmd="create"
+    local output_dir="$PROJECT_ROOT/backups"
+    local backup_file=""
+    local force=0
+    
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            create|backup)
+                cmd="create"
+                shift
+                ;;
+            list|ls)
+                cmd="list"
+                shift
+                ;;
+            restore)
+                cmd="restore"
+                shift
+                # Next argument should be the backup file
+                if [[ $# -gt 0 && ! "$1" =~ ^- ]]; then
+                    backup_file="$1"
+                    shift
+                fi
+                ;;
+            -o|--output)
+                output_dir="$2"
+                shift 2
+                ;;
+            -f|--force)
+                force=1
+                shift
+                ;;
+            help|--help|-h)
+                usage
+                ;;
+            *)
+                # If no command specified yet and arg doesn't start with -, treat as backup file for restore
+                if [[ "$cmd" == "create" && ! "$1" =~ ^- ]]; then
+                    echo -e "${RED}Error:${NC} Unknown option: $1"
+                    echo ""
+                    usage
+                else
+                    echo -e "${RED}Error:${NC} Unknown option: $1"
+                    echo ""
+                    usage
+                fi
+                ;;
+        esac
+    done
+    
+    case "$cmd" in
+        create)
+            create_backup "$output_dir"
+            ;;
+        list)
+            list_backups "$output_dir"
+            ;;
+        restore)
+            restore_backup "$backup_file" "$force"
+            ;;
+    esac
+}
+
+main "$@"

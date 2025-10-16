@@ -1,0 +1,462 @@
+#!/usr/bin/env bash
+# dotman - dotfiles manager
+# Manages dotfiles using config.yaml for import/deploy/status/list operations
+set -euo pipefail
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Get the project root directory
+get_project_root() {
+    if git_root=$(git rev-parse --show-toplevel 2>/dev/null); then
+        printf '%s' "$git_root"
+    else
+        local src="${BASH_SOURCE[0]}"
+        while [ -L "$src" ]; do
+            src="$(readlink "$src")"
+        done
+        printf '%s' "$(cd "$(dirname "$src")" >/dev/null 2>&1 && pwd)"
+    fi
+}
+
+PROJECT_ROOT="$(get_project_root)"
+CONFIG_FILE="$PROJECT_ROOT/config.yaml"
+
+# Assume yq is installed for YAML parsing
+parse_yaml() {
+    local query="$1"
+    
+    # Detect yq version and use appropriate syntax
+    if yq --version 2>&1 | grep -q "mikefarah/yq"; then
+        # Go-based yq (mikefarah) - version 4.x
+        yq eval "$query" "$CONFIG_FILE"
+    else
+        # Python-based yq (kislyuk) - version 3.x or jq-wrapper style
+        # Convert our query syntax to yq 3.x style
+        if [[ "$query" == ".mappings | length" ]]; then
+            yq -r '.mappings | length' "$CONFIG_FILE"
+        elif [[ "$query" =~ \.mappings\[([0-9]+)\]\.source ]]; then
+            local idx="${BASH_REMATCH[1]}"
+            yq -r ".mappings[$idx].source" "$CONFIG_FILE"
+        elif [[ "$query" =~ \.mappings\[([0-9]+)\]\.dest ]]; then
+            local idx="${BASH_REMATCH[1]}"
+            yq -r ".mappings[$idx].dest" "$CONFIG_FILE"
+        fi
+    fi
+}
+
+# Get number of mappings
+get_mapping_count() {
+    parse_yaml '.mappings | length'
+}
+
+# Get source for mapping at index
+get_mapping_source() {
+    local idx="$1"
+    parse_yaml ".mappings[$idx].source"
+}
+
+# Get dest for mapping at index
+get_mapping_dest() {
+    local idx="$1"
+    local dest
+    dest=$(parse_yaml ".mappings[$idx].dest")
+    # Expand ~ to $HOME
+    dest="${dest/#\~/$HOME}"
+    echo "$dest"
+}
+
+# Parse config.yaml and iterate over mappings using yq
+iterate_mappings() {
+    local callback="$1"
+    shift
+    
+    local count
+    count=$(get_mapping_count)
+    
+    for ((i=0; i<count; i++)); do
+        local source
+        local dest
+        source=$(get_mapping_source "$i")
+        dest=$(get_mapping_dest "$i")
+        
+        "$callback" "$source" "$dest" "$@"
+    done
+}
+
+# Command: list - show all mappings
+cmd_list() {
+    echo "Dotfiles mappings from config.yaml:"
+    echo ""
+    
+    list_callback() {
+        local source="$1"
+        local dest="$2"
+        printf "  %-20s -> %s\n" "$source" "$dest"
+    }
+    
+    iterate_mappings list_callback
+}
+
+# Command: status - show status of each mapping
+cmd_status() {
+    echo "Dotfiles status:"
+    echo ""
+    
+    status_callback() {
+        local source="$1"
+        local dest="$2"
+        local repo_path="$PROJECT_ROOT/$source"
+        
+        printf "%-20s " "$source"
+        
+        # Check if exists in repo
+        if [[ ! -e "$repo_path" ]]; then
+            echo -e "${RED}✗${NC} Not in repo"
+            return
+        fi
+        
+        # Check if dest exists and is a symlink
+        if [[ -L "$dest" ]]; then
+            local link_target
+            link_target=$(readlink "$dest")
+            if [[ "$link_target" == "$repo_path" ]]; then
+                echo -e "${GREEN}✓${NC} Deployed (symlinked)"
+            else
+                echo -e "${YELLOW}⚠${NC} Symlinked elsewhere: $link_target"
+            fi
+        elif [[ -e "$dest" ]]; then
+            echo -e "${BLUE}●${NC} Exists in OS (not symlinked)"
+        else
+            echo -e "${YELLOW}○${NC} In repo, not deployed"
+        fi
+    }
+    
+    iterate_mappings status_callback
+}
+
+# Command: import - copy from OS to repo
+cmd_import() {
+    local force=0
+    local target=""
+    
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -f|--force)
+                force=1
+                shift
+                ;;
+            *)
+                target="$1"
+                shift
+                ;;
+        esac
+    done
+    
+    if [[ "$target" == "--all" ]]; then
+        echo "Importing all mappings..."
+        echo ""
+        iterate_mappings import_single_callback "$force"
+    elif [[ -n "$target" ]]; then
+        import_single "$target" "$force"
+    else
+        echo "Error: Please specify a config name or --all"
+        echo "Usage: $0 import [-f|--force] <name|--all>"
+        exit 1
+    fi
+}
+
+import_single_callback() {
+    local source="$1"
+    local dest="$2"
+    local force="${3:-0}"
+    local repo_path="$PROJECT_ROOT/$source"
+    
+    # Check if source exists in OS
+    if [[ ! -e "$dest" ]]; then
+        echo -e "${RED}Error:${NC} $source - $dest does not exist in OS"
+        return 0  # Continue with next mapping
+    fi
+    
+    # Check if already exists in repo
+    if [[ -e "$repo_path" ]]; then
+        if [[ $force -eq 0 ]]; then
+            echo -e "${YELLOW}Warning:${NC} $source already exists in repo"
+            read -r -p "Overwrite? [y/N] " ans </dev/tty
+            case "$ans" in
+                [Yy]* ) ;;
+                * ) echo "Skipped $source."; return 0 ;;
+            esac
+        fi
+    fi
+    
+    # Create parent directory in repo
+    mkdir -p "$(dirname "$repo_path")"
+    
+    # Copy from OS to repo
+    if [[ -d "$dest" ]]; then
+        rsync -a "$dest/" "$repo_path/"
+        echo -e "${GREEN}✓${NC} Imported directory: $dest -> $repo_path"
+    else
+        rsync -a "$dest" "$repo_path"
+        echo -e "${GREEN}✓${NC} Imported file: $dest -> $repo_path"
+    fi
+}
+
+import_single() {
+    local name="$1"
+    local force="${2:-0}"
+    local found=0
+    
+    import_check_callback() {
+        local source="$1"
+        local dest="$2"
+        
+        if [[ "$source" == "$name" ]]; then
+            found=1
+            local repo_path="$PROJECT_ROOT/$source"
+            
+            # Check if source exists in OS
+            if [[ ! -e "$dest" ]]; then
+                echo -e "${RED}Error:${NC} $dest does not exist in OS"
+                return 1
+            fi
+            
+            # Check if already exists in repo
+            if [[ -e "$repo_path" ]]; then
+                if [[ $force -eq 0 ]]; then
+                    echo -e "${YELLOW}Warning:${NC} $source already exists in repo"
+                    read -r -p "Overwrite? [y/N] " ans </dev/tty
+                    case "$ans" in
+                        [Yy]* ) ;;
+                        * ) echo "Skipped."; return 0 ;;
+                    esac
+                fi
+            fi
+            
+            # Create parent directory in repo
+            mkdir -p "$(dirname "$repo_path")"
+            
+            # Copy from OS to repo
+            if [[ -d "$dest" ]]; then
+                rsync -a "$dest/" "$repo_path/"
+                echo -e "${GREEN}✓${NC} Imported directory: $dest -> $repo_path"
+            else
+                rsync -a "$dest" "$repo_path"
+                echo -e "${GREEN}✓${NC} Imported file: $dest -> $repo_path"
+            fi
+        fi
+    }
+    
+    iterate_mappings import_check_callback
+    
+    if [[ $found -eq 0 ]]; then
+        echo -e "${RED}Error:${NC} Config '$name' not found in config.yaml"
+        exit 1
+    fi
+}
+
+# Command: deploy - symlink from repo to OS
+cmd_deploy() {
+    local force=0
+    local target=""
+    
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -f|--force)
+                force=1
+                shift
+                ;;
+            *)
+                target="$1"
+                shift
+                ;;
+        esac
+    done
+    
+    if [[ "$target" == "--all" ]]; then
+        echo "Deploying all mappings..."
+        echo ""
+        iterate_mappings deploy_single_callback "$force"
+    elif [[ -n "$target" ]]; then
+        deploy_single "$target" "$force"
+    else
+        echo "Error: Please specify a config name or --all"
+        echo "Usage: $0 deploy [-f|--force] <name|--all>"
+        exit 1
+    fi
+}
+
+deploy_single_callback() {
+    local source="$1"
+    local dest="$2"
+    local force="${3:-0}"
+    local repo_path="$PROJECT_ROOT/$source"
+    
+    # Check if exists in repo
+    if [[ ! -e "$repo_path" ]]; then
+        echo -e "${RED}Error:${NC} $source does not exist in repo"
+        return 0  # Continue with next mapping
+    fi
+    
+    # Check if dest already exists
+    if [[ -e "$dest" || -L "$dest" ]]; then
+        if [[ -L "$dest" ]]; then
+            local link_target
+            link_target=$(readlink "$dest")
+            if [[ "$link_target" == "$repo_path" ]]; then
+                echo -e "${BLUE}Info:${NC} $source already deployed"
+                return 0
+            fi
+        fi
+        
+        if [[ $force -eq 0 ]]; then
+            echo -e "${YELLOW}Warning:${NC} $dest already exists"
+            read -r -p "Remove and replace with symlink? [y/N] " ans </dev/tty
+            case "$ans" in
+                [Yy]* ) rm -rf "$dest" ;;
+                * ) echo "Skipped $source."; return 0 ;;
+            esac
+        else
+            rm -rf "$dest"
+        fi
+    fi
+    
+    # Create parent directory
+    mkdir -p "$(dirname "$dest")"
+    
+    # Create symlink
+    ln -s "$repo_path" "$dest"
+    echo -e "${GREEN}✓${NC} Deployed: $dest -> $repo_path"
+}
+
+deploy_single() {
+    local name="$1"
+    local force="${2:-0}"
+    local found=0
+    
+    deploy_check_callback() {
+        local source="$1"
+        local dest="$2"
+        
+        if [[ "$source" == "$name" ]]; then
+            found=1
+            local repo_path="$PROJECT_ROOT/$source"
+            
+            # Check if exists in repo
+            if [[ ! -e "$repo_path" ]]; then
+                echo -e "${RED}Error:${NC} $source does not exist in repo"
+                return 1
+            fi
+            
+            # Check if dest already exists
+            if [[ -e "$dest" || -L "$dest" ]]; then
+                if [[ -L "$dest" ]]; then
+                    local link_target
+                    link_target=$(readlink "$dest")
+                    if [[ "$link_target" == "$repo_path" ]]; then
+                        echo -e "${BLUE}Info:${NC} $source already deployed"
+                        return 0
+                    fi
+                fi
+                
+                if [[ $force -eq 0 ]]; then
+                    echo -e "${YELLOW}Warning:${NC} $dest already exists"
+                    read -r -p "Remove and replace with symlink? [y/N] " ans </dev/tty
+                    case "$ans" in
+                        [Yy]* ) rm -rf "$dest" ;;
+                        * ) echo "Skipped."; return 0 ;;
+                    esac
+                else
+                    rm -rf "$dest"
+                fi
+            fi
+            
+            # Create parent directory
+            mkdir -p "$(dirname "$dest")"
+            
+            # Create symlink
+            ln -s "$repo_path" "$dest"
+            echo -e "${GREEN}✓${NC} Deployed: $dest -> $repo_path"
+        fi
+    }
+    
+    iterate_mappings deploy_check_callback
+    
+    if [[ $found -eq 0 ]]; then
+        echo -e "${RED}Error:${NC} Config '$name' not found in config.yaml"
+        exit 1
+    fi
+}
+
+# Usage/help
+usage() {
+    cat <<EOF
+dotman - Dotfiles Manager
+
+Usage:
+    $0 list                         List all mappings from config.yaml
+    $0 status                       Show status of all mappings
+    $0 import [-f] <name|--all>     Copy config from OS to repo
+    $0 deploy [-f] <name|--all>     Symlink config from repo to OS
+
+Options:
+    -f, --force                     Skip confirmation prompts (auto-overwrite)
+
+Examples:
+    $0 list                         # Show all configured mappings
+    $0 status                       # Check what's imported/deployed
+    $0 import nvim                  # Copy ~/.config/nvim to repo
+    $0 import --all                 # Import all configs
+    $0 import -f --all              # Import all configs without prompts
+    $0 deploy nvim                  # Symlink repo/nvim to ~/.config/nvim
+    $0 deploy --all                 # Deploy all configs
+    $0 deploy -f --all              # Deploy all configs without prompts
+
+EOF
+    exit 0
+}
+
+# Main command dispatcher
+main() {
+    # Check if config.yaml exists
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        echo -e "${RED}Error:${NC} config.yaml not found in $PROJECT_ROOT"
+        exit 1
+    fi
+    
+    local cmd="${1:-}"
+    
+    case "$cmd" in
+        list)
+            cmd_list
+            ;;
+        status)
+            cmd_status
+            ;;
+        import)
+            shift
+            cmd_import "$@"
+            ;;
+        deploy)
+            shift
+            cmd_deploy "$@"
+            ;;
+        help|--help|-h|"")
+            usage
+            ;;
+        *)
+            echo -e "${RED}Error:${NC} Unknown command: $cmd"
+            echo ""
+            usage
+            ;;
+    esac
+}
+
+main "$@"

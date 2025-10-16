@@ -1,0 +1,21 @@
+mappings:
+  - source: nvim
+    dest: ~/.config/nvim
+
+  - source: alacritty
+    dest: ~/.config/alacritty
+
+  - source: git
+    dest: ~/.config/git
+
+  - source: .bashrc
+    dest: ~/.bashrc
+
+  - source: hypr
+    dest: ~/.config/hypr
+
+  - source: waybar
+    dest: ~/.config/waybar
+
+  - source: omarchy
+    dest: ~/.config/omarchy

@@ -1,0 +1,1 @@
+/home/tharindu/.config/omarchy/current/theme/neovim.lua
