@@ -6,3 +6,8 @@ source ~/.local/share/omarchy/default/bash/rc
 #
 # Make an alias for invoking commands you use constantly
 # alias p='python'
+alias vim='nvim'
+alias vi='nvim'
+
+# Add .config/omarchy/bin to your PATH
+export PATH="$HOME/.config/omarchy/bin:$PATH"
